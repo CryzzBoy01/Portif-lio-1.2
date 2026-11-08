@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<!--
+=====================================================================
+  PORTFÓLIO — CRYSTIAN PEREIRA DE ALMEIDA
+  Estilo: "neo-brutalista" (cards grossos com sombra dura deslocada)
+          + estética hacker (terminal, matrix, glitch, neon verde)
+=====================================================================
+
+  COMO EDITAR RÁPIDO:
+  1) TEXTOS, PROJETOS, SKILLS e LINKS  -> procure por "const DADOS"
+     no <script> lá embaixo. Quase tudo da página é gerado a partir
+     desse objeto, então você não precisa mexer no HTML.
+  2) CORES e FONTES -> procure por ":root" no <style>. Trocando as
+     variáveis, a página inteira muda.
+  3) ANIMAÇÕES -> cada animação tem um bloco próprio no <script>,
+     com um título em comentário (ex.: "4. CHUVA MATRIX").
+     Para desligar uma, basta comentar a chamada dela no final
+     do arquivo (seção "INICIALIZAÇÃO").
+
+  ESTRUTURA DA PÁGINA (na ordem em que aparece):
+    #boot       -> tela de "boot" do sistema (loader inicial)
+    #matrix     -> canvas com a chuva de caracteres no fundo
+    .nav        -> barra superior + menu sobreposto
+    #inicio     -> hero (nome com glitch + texto digitando)
+    .stats      -> cards de estatística + terminal interativo
+    #projetos   -> filtros (pílulas) + grade de projetos
+    #github     -> projetos do GitHub (com mini preview de cada site)
+    .marquee    -> faixa de tecnologias rolando
+    #sobre      -> janela de terminal com "whoami"
+    #jornada    -> linha do tempo
+    #contato    -> cards de redes sociais
+    footer      -> rodapé
+
+  ARQUIVOS DE IMAGEM (precisam ficar junto deste index.html):
+    img/PFP.png              -> foto de perfil (avatar do topo)
+    img/previews/*.jpg       -> prints dos projetos (mini previews)
+  Para trocar uma imagem, basta substituir o arquivo mantendo o nome,
+  ou mudar o caminho no objeto DADOS.
+=====================================================================
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRYS_ // Portfólio de Crystian Pereira</title>
+
+  <!-- FONTES (Google Fonts)
+       - Archivo Black: títulos grossos em caixa alta
+       - JetBrains Mono: texto "de terminal" do resto da página -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ===============================================================
+       1. VARIÁVEIS DE TEMA
+       Mude aqui para alterar o visual da página inteira.
+       =============================================================== */
+    :root {
+      --bg:        #060a0f;   /* fundo da página */
+      --bg-2:      #0b121b;   /* fundo dos cards */
+      --bg-3:      #111c28;   /* fundo de elementos internos */
+      --line:      #000000;   /* cor das bordas grossas */
+      --text:      #d7e3ee;   /* texto principal */
+      --muted:     #7b8ea3;   /* texto secundário */
+      --green:     #00ff9c;   /* neon principal (hacker) */
+      --cyan:      #22d3ee;   /* neon secundário */
+      --yellow:    #ffd400;   /* destaque dos botões principais */
+      --red:       #ff3b5c;   /* usado no efeito glitch */
+
+      --radius:    14px;      /* arredondamento dos cards */
+      --border:    3px;       /* espessura das bordas */
+      --shadow:    6px 6px 0 var(--line);          /* sombra "dura" */
+      --shadow-hv: 10px 10px 0 var(--green);       /* sombra no hover */
+
+      --font-title: "Archivo Black", Impact, sans-serif;
+      --font-mono:  "JetBrains Mono", ui-monospace, Consolas, monospace;
+    }
+
+    /* ===============================================================
+       2. BASE / RESET
+       =============================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--green); color: #000; }
+
+    /* Barra de rolagem estilizada */
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--green); border: 2px solid var(--bg); }
+
+    /* Container central: limita a largura do conteúdo */
+    .container { width: min(1120px, 92%); margin: 0 auto; position: relative; z-index: 2; }
+
+    /* ---------------------------------------------------------------
+       CARD BASE — o "bloco" característico do estilo:
+       borda preta grossa + sombra dura deslocada.
+       Qualquer elemento com a classe .card ganha esse visual.
+       --------------------------------------------------------------- */
+    .card {
+      background: var(--bg-2);
+      border: var(--border) solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    /* .card.hover = card que "levanta" quando o mouse passa */
+    .card.hover:hover {
+      transform: translate(-4px, -4px);
+      box-shadow: var(--shadow-hv);
+    }
+
+    /* Botões no mesmo estilo dos cards */
+    .btn {
+      display: inline-flex; align-items: center; gap: .6rem;
+      font-family: var(--font-title);
+      text-transform: uppercase; letter-spacing: .5px; font-size: .9rem;
+      padding: .85rem 1.5rem;
+      border: var(--border) solid var(--line);
+      border-radius: 10px;
+      box-shadow: 4px 4px 0 var(--line);
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover  { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--line); }
+    .btn:active { transform: translate(3px, 3px);   box-shadow: 1px 1px 0 var(--line); }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-dark   { background: var(--bg-3); color: var(--green); }
+
+    /* Títulos de seção (caixa alta, grossos, centralizados) */
+    .section { padding: 5rem 0; position: relative; z-index: 2; }
+    .section-title {
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      text-align: center;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      line-height: 1.1;
+      margin-bottom: .6rem;
+    }
+    .section-title span { color: var(--green); }
+    .section-sub {
+      text-align: center; color: var(--muted); margin-bottom: 2.5rem; font-size: .9rem;
+    }
+    .section-sub::before { content: "// "; color: var(--green); }
+
+    /* ===============================================================
+       3. TELA DE BOOT (loader inicial)
+       Some sozinha quando o JS termina de "digitar" as linhas.
+       =============================================================== */
+    #boot {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity .6s ease, visibility .6s;
+    }
+    #boot.hide { opacity: 0; visibility: hidden; }
+    #boot pre {
+      font-family: var(--font-mono); color: var(--green);
+      font-size: clamp(.7rem, 2.2vw, .95rem);
+      width: min(620px, 90%); white-space: pre-wrap;
+    }
+    #boot .ok { color: var(--green); }
+    #boot .dim { color: var(--muted); }
+
+    /* ===============================================================
+       4. FUNDO: CHUVA MATRIX + SCANLINES
+       =============================================================== */
+    #matrix {
+      position: fixed; inset: 0; z-index: 0;
+      opacity: .14;              /* intensidade da chuva no fundo */
+      pointer-events: none;
+    }
+    /* Linhas horizontais finas, imitando monitor CRT */
+    .scanlines {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
+    }
+
+    /* ===============================================================
+       5. NAVEGAÇÃO
+       =============================================================== */
+    .nav-wrap { position: sticky; top: 14px; z-index: 50; padding-top: 14px; }
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem .9rem;
+      background: rgba(11, 18, 27, .92);
+      backdrop-filter: blur(6px);
+    }
+    .logo {
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--bg-3);
+      border: var(--border) solid var(--line);
+      border-radius: 10px; padding: .45rem .9rem;
+      font-family: var(--font-title); font-size: 1.05rem;
+      box-shadow: 3px 3px 0 var(--line);
+    }
+    .logo b { color: var(--green); }
+    .logo .cursor-blink { color: var(--green); animation: blink 1s steps(1) infinite; }
+
+    /* Links do menu em telas grandes */
+    .nav-links { display: flex; gap: .4rem; list-style: none; }
+    .nav-links a {
+      font-size: .8rem; font-weight: 800; text-transform: uppercase;
+      padding: .5rem .8rem; border-radius: 8px; color: var(--muted);
+      transition: color .2s, background .2s;
+    }
+    .nav-links a:hover { color: #000; background: var(--green); }
+
+    /* Botão hambúrguer (aparece no celular) */
+    .burger {
+      display: none;
+      width: 46px; height: 46px;
+      background: var(--bg-3); color: var(--green);
+      border: var(--border) solid var(--line); border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--line);
+      cursor: pointer; font-size: 1.3rem;
+    }
+
+    /* Menu em tela cheia (abre pelo hambúrguer) */
+    .menu-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.94);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+      clip-path: circle(0% at calc(100% - 50px) 50px);   /* começa fechado */
+      transition: clip-path .55s cubic-bezier(.7,0,.2,1);
+    }
+    .menu-overlay.open { clip-path: circle(150% at calc(100% - 50px) 50px); }
+    .menu-overlay a {
+      font-family: var(--font-title); font-size: clamp(1.8rem, 7vw, 3rem);
+      text-transform: uppercase; color: var(--text);
+    }
+    .menu-overlay a::before { content: "> "; color: var(--green); }
+    .menu-overlay a:hover { color: var(--green); }
+    .menu-close { position: absolute; top: 28px; right: 6%; }
+
+    /* ===============================================================
+       6. HERO (topo da página)
+       =============================================================== */
+    #inicio { padding: 2.5rem 0 1.5rem; }
+    .hero {
+      position: relative; overflow: hidden;
+      min-height: 430px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 3rem 1.5rem;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(0,255,156,.12), transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(34,211,238,.12), transparent 45%),
+        var(--bg-2);
+    }
+    /* Grade de fundo do hero (efeito "ciberespaço") */
+    .hero::before {
+      content: ""; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,156,.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,156,.07) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at center, #000 30%, transparent 75%);
+      animation: grid-move 12s linear infinite;
+    }
+    .hero > * { position: relative; }
+
+    /* Avatar com iniciais (veja comentário no HTML para trocar por foto) */
+    .avatar {
+      width: 110px; height: 110px; border-radius: 50%;
+      border: var(--border) solid var(--line);
+      box-shadow: 0 0 0 4px var(--green), 5px 5px 0 6px var(--line);
+      display: grid; place-items: center;
+      background: var(--bg-3);
+      font-family: var(--font-title); font-size: 2.2rem; color: var(--green);
+      margin-bottom: 1.4rem;
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .tag {
+      display: inline-block;
+      background: #000; color: var(--green);
+      border: 2px solid var(--green); border-radius: 999px;
+      padding: .2rem .8rem; font-size: .75rem; font-weight: 800;
+      margin-bottom: 1rem;
+    }
+    .tag .dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); margin-right: .4rem;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    /* ---- EFEITO GLITCH no nome ----
+       O texto é duplicado com ::before e ::after (via data-text)
+       e cada cópia "treme" com uma cor diferente. */
+    .glitch {
+      position: relative;
+      font-family: var(--font-title);
+      text-transform: uppercase;
+      font-size: clamp(2rem, 7vw, 4.6rem);
+      line-height: 1;
+      color: #fff;
+      text-shadow: 4px 4px 0 #000;
+    }
+    .glitch::before, .glitch::after {
+      content: attr(data-text);
+      position: absolute; inset: 0;
+      text-shadow: none;
+    }
+    .glitch::before { color: var(--cyan); animation: glitch-a 3s infinite linear; }
+    .glitch::after  { color: var(--red);  animation: glitch-b 3.7s infinite linear; }
+
+    /* Texto que se digita sozinho */
+    .typing {
+      margin-top: 1.1rem; min-height: 1.8em;
+      font-size: clamp(.95rem, 2.5vw, 1.2rem); color: var(--green);
+    }
+    .typing .caret { animation: blink .8s steps(1) infinite; }
+
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 1.8rem; }
+
+    /* ===============================================================
+       7. LINHA DE ESTATÍSTICAS + TERMINAL
+       =============================================================== */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 2.2fr 1fr;
+      gap: 1.2rem; margin-top: 1.4rem;
+    }
+    .stats > * { min-width: 0; }   /* impede que itens estourem a grade */
+    .stat { display: flex; align-items: center; gap: .9rem; padding: 1rem 1.2rem; }
+    .stat-icon {
+      width: 46px; height: 46px; flex-shrink: 0;
+      display: grid; place-items: center;
+      background: #000; border-radius: 10px; color: var(--green);
+      font-weight: 800;
+    }
+    .stat-num   { font-family: var(--font-title); font-size: 1.5rem; line-height: 1; }
+    .stat-label { font-size: .7rem; font-weight: 800; text-transform: uppercase; color: var(--muted); }
+
+    /* Mini terminal onde o visitante digita comandos */
+    .term-input {
+      display: flex; align-items: center; gap: .6rem; padding: .7rem .7rem .7rem 1.1rem;
+    }
+    .term-input label { color: var(--green); font-weight: 800; white-space: nowrap; }
+    .term-input input {
+      flex: 1; min-width: 0;
+      background: transparent; border: none; outline: none;
+      color: var(--text); font-family: var(--font-mono); font-size: 1rem;
+    }
+    .term-input input::placeholder { color: var(--muted); }
+    .term-output {
+      grid-column: 1 / -1;
+      display: none;
+      padding: 1rem 1.2rem; font-size: .85rem;
+      white-space: pre-wrap; color: var(--text);
+      max-height: 260px; overflow: auto;
+    }
+    .term-output.show { display: block; animation: drop .25s ease; }
+    .term-output .c { color: var(--green); }
+
+    /* ===============================================================
+       8. FILTROS (pílulas) + GRADE DE PROJETOS
+       =============================================================== */
+    .filters { display: flex; flex-wrap: wrap; justify-content: center; gap: .7rem; margin-bottom: 2.2rem; }
+    .pill {
+      font-family: var(--font-title); text-transform: uppercase; font-size: .75rem;
+      padding: .55rem 1.1rem;
+      background: var(--bg-2); color: var(--text);
+      border: var(--border) solid var(--line); border-radius: 10px;
+      box-shadow: 3px 3px 0 var(--line);
+      cursor: pointer; transition: all .15s;
+    }
+    .pill:hover  { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--line); }
+    .pill.active { background: var(--green); color: #000; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.6rem;
+    }
+    .project { overflow: hidden; display: flex; flex-direction: column; }
+    .project.hidden { display: none; }
+
+    /* "Capa" do projeto: gerada com CSS, sem precisar de imagem */
+    .project-cover {
+      height: 150px; position: relative;
+      border-bottom: var(--border) solid var(--line);
+      display: grid; place-items: center;
+      font-family: var(--font-title); font-size: 2.6rem; color: rgba(0,0,0,.75);
+      overflow: hidden;
+    }
+    .project-cover::after {   /* brilho que passa no hover */
+      content: ""; position: absolute; top: 0; left: -120%;
+      width: 60%; height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+      transform: skewX(-20deg);
+      transition: left .6s ease;
+    }
+    .project:hover .project-cover::after { left: 140%; }
+    .project-cover .badge {
+      position: absolute; top: 10px; left: 10px;
+      background: #000; color: var(--green);
+      font-family: var(--font-mono); font-size: .65rem; font-weight: 800;
+      padding: .2rem .55rem; border-radius: 6px; text-transform: uppercase;
+    }
+
+    .project-body { padding: 1.1rem 1.2rem 1.3rem; display: flex; flex-direction: column; gap: .6rem; flex: 1; }
+    .project-body h3 { font-family: var(--font-title); text-transform: uppercase; font-size: 1.05rem; line-height: 1.2; }
+    .project-body p { color: var(--muted); font-size: .85rem; flex: 1; }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .chip {
+      font-size: .68rem; font-weight: 800;
+      padding: .15rem .55rem; border-radius: 6px;
+      background: var(--bg-3); color: var(--cyan); border: 1px solid #1d3346;
+    }
+
+    /* ---------------------------------------------------------------
+       MINI PREVIEW: quando o projeto tem um print (campo "preview"),
+       a capa vira uma "janelinha de navegador" mostrando o site.
+       --------------------------------------------------------------- */
+    .project-cover.has-preview {
+      display: block;              /* deixa a imagem ocupar tudo */
+      height: 190px;
+      background: #000;
+    }
+    .browser-bar {                 /* barrinha com as 3 bolinhas e a URL */
+      width: 100%; margin: 0;
+      height: 26px;
+      display: flex; align-items: center; gap: 5px;
+      padding: 0 10px;
+      background: #000;
+      border-bottom: 2px solid #1d2a38;
+      font-size: .62rem; color: var(--muted);
+    }
+    .browser-bar i { width: 8px; height: 8px; border-radius: 50%; background: #333; }
+    .browser-bar i:nth-child(1) { background: #ff5f57; }
+    .browser-bar i:nth-child(2) { background: #febc2e; }
+    .browser-bar i:nth-child(3) { background: #28c840; }
+    .browser-bar span {
+      margin-left: 8px; flex: 1;
+      background: var(--bg-3); border-radius: 4px; padding: 0 8px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .project-cover.has-preview img {
+      width: 100%; height: calc(100% - 26px);
+      object-fit: cover; object-position: top center;
+      display: block;
+      transition: transform .5s ease;   /* zoom suave no hover */
+    }
+    .project:hover .project-cover.has-preview img { transform: scale(1.06); }
+    .project-cover.has-preview .badge { top: 36px; z-index: 1; }
+
+    /* Rodapé dos cards do GitHub: linguagem + ação ("Ver site ↗") */
+    .project-foot {
+      display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+      margin-top: .3rem; padding-top: .7rem;
+      border-top: 1px dashed #1d3346;
+      font-size: .75rem; font-weight: 800;
+    }
+    .lang::before {                      /* bolinha colorida da linguagem */
+      content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+      background: var(--lang, var(--green)); margin-right: .4rem; vertical-align: -1px;
+    }
+    .go { color: var(--green); transition: transform .2s; }
+    .project:hover .go { transform: translateX(4px); }
+
+    .center { text-align: center; margin-top: 2.4rem; }
+
+    /* ===============================================================
+       9. FAIXA DE TECNOLOGIAS (marquee infinito)
+       O conteúdo é duplicado no JS para o loop ficar sem emenda.
+       =============================================================== */
+    .marquee {
+      position: relative; z-index: 2;
+      background: var(--green); color: #000;
+      border-top: var(--border) solid var(--line);
+      border-bottom: var(--border) solid var(--line);
+      transform: rotate(-1.5deg);
+      margin: 1rem -2%;
+      overflow: hidden; white-space: nowrap;
+    }
+    .marquee-track {
+      display: inline-flex; gap: 2.5rem; padding: .9rem 0;
+      font-family: var(--font-title); text-transform: uppercase; font-size: 1.15rem;
+      animation: marquee 28s linear infinite;   /* velocidade da faixa */
+    }
+    .marquee-track span::after { content: "  ✦"; }
+
+    /* ===============================================================
+       10. SOBRE (janela de terminal)
+       =============================================================== */
+    .window { overflow: hidden; max-width: 820px; margin: 0 auto; }
+    .window-bar {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .7rem 1rem; background: #000;
+      border-bottom: var(--border) solid var(--line);
+      font-size: .75rem; color: var(--muted);
+    }
+    .window-bar i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .window-bar i:nth-child(1) { background: #ff5f57; }
+    .window-bar i:nth-child(2) { background: #febc2e; }
+    .window-bar i:nth-child(3) { background: #28c840; }
+    .window-bar span { margin-left: auto; }
+    .window-body { padding: 1.4rem 1.5rem; font-size: .92rem; }
+    .window-body .prompt { color: var(--green); }
+    .window-body .key { color: var(--cyan); }
+    .window-body .str { color: var(--yellow); }
+    .window-body p { margin-bottom: .35rem; }
+
+    /* ===============================================================
+       11. JORNADA (linha do tempo)
+       =============================================================== */
+    .timeline { max-width: 760px; margin: 0 auto; position: relative; padding-left: 2rem; }
+    .timeline::before {
+      content: ""; position: absolute; left: 8px; top: 0; bottom: 0;
+      width: 3px; background: linear-gradient(var(--green), var(--cyan));
+    }
+    .tl-item { position: relative; padding: 1rem 1.2rem; margin-bottom: 1.4rem; }
+    .tl-item::before {
+      content: ""; position: absolute; left: calc(-2rem - 2px); top: 1.3rem;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--bg); border: 3px solid var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+    .tl-year { font-family: var(--font-title); color: var(--green); font-size: 1.1rem; }
+    .tl-item h4 { text-transform: uppercase; font-size: .95rem; }
+    .tl-item p { color: var(--muted); font-size: .85rem; }
+
+    /* ===============================================================
+       12. CONTATO
+       =============================================================== */
+    .contacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.6rem; max-width: 820px; margin: 0 auto; }
+    .contact { display: flex; align-items: center; gap: 1rem; padding: 1.3rem 1.4rem; }
+    .contact-icon {
+      width: 58px; height: 58px; flex-shrink: 0; border-radius: 12px;
+      display: grid; place-items: center;
+      border: var(--border) solid var(--line);
+    }
+    .contact-icon svg { width: 28px; height: 28px; fill: #fff; }
+    .contact h4 { font-family: var(--font-title); text-transform: uppercase; }
+    .contact small { color: var(--muted); }
+    .contact .arrow { margin-left: auto; color: var(--green); font-size: 1.4rem; transition: transform .2s; }
+    .contact:hover .arrow { transform: translateX(6px); }
+
+    /* ===============================================================
+       13. RODAPÉ + BOTÃO VOLTAR AO TOPO
+       =============================================================== */
+    footer {
+      position: relative; z-index: 2;
+      text-align: center; padding: 2.5rem 0 3rem; color: var(--muted); font-size: .8rem;
+    }
+    footer b { color: var(--green); }
+    .to-top {
+      position: fixed; right: 20px; bottom: 20px; z-index: 60;
+      opacity: 0; pointer-events: none; transform: translateY(20px);
+      transition: all .3s;
+    }
+    .to-top.show { opacity: 1; pointer-events: auto; transform: none; }
+
+    /* ===============================================================
+       14. ANIMAÇÃO DE ENTRADA AO ROLAR (scroll reveal)
+       Qualquer elemento com .reveal começa invisível e aparece
+       quando entra na tela (controlado pelo JS).
+       =============================================================== */
+    .reveal { opacity: 0; transform: translateY(40px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ===============================================================
+       15. KEYFRAMES (definição das animações)
+       =============================================================== */
+    @keyframes blink   { 50% { opacity: 0; } }
+    @keyframes pulse   { 0%,100% { box-shadow: 0 0 0 0 rgba(0,255,156,.7); } 50% { box-shadow: 0 0 0 6px rgba(0,255,156,0); } }
+    @keyframes marquee { to { transform: translateX(-50%); } }
+    @keyframes drop    { from { opacity: 0; transform: translateY(-8px); } }
+    @keyframes grid-move { to { background-position: 32px 32px; } }
+    @keyframes glitch-a {
+      0%   { clip-path: inset(10% 0 80% 0); transform: translate(-3px, 0); }
+      6%   { clip-path: inset(60% 0 10% 0); transform: translate(3px, 0); }
+      12%  { clip-path: inset(30% 0 50% 0); transform: translate(-2px, 0); }
+      18%  { clip-path: inset(80% 0 5% 0);  transform: translate(2px, 0); }
+      24%, 100% { clip-path: inset(0 0 100% 0); transform: none; }
+    }
+    @keyframes glitch-b {
+      0%   { clip-path: inset(70% 0 10% 0); transform: translate(3px, 0); }
+      7%   { clip-path: inset(20% 0 60% 0); transform: translate(-3px, 0); }
+      14%  { clip-path: inset(45% 0 35% 0); transform: translate(2px, 0); }
+      21%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
+    }
+
+    /* ===============================================================
+       16. RESPONSIVO (celular e tablet)
+       =============================================================== */
+    @media (max-width: 860px) {
+      .nav-links { display: none; }
+      .burger { display: block; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .term-input { grid-column: 1 / -1; order: -1; }
+    }
+    @media (max-width: 480px) {
+      .stats { grid-template-columns: 1fr; }
+      .term-input label .long { display: none; }   /* encurta o prompt no celular */
+      .hero { min-height: 380px; }
+    }
+
+    /* Acessibilidade: quem prefere menos movimento não vê animações */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; transform: none; }
+      #matrix { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==============================================================
+       TELA DE BOOT — as linhas são escritas pelo JS (função boot)
+       ============================================================== -->
+  <div id="boot" aria-hidden="true"><pre id="boot-text"></pre></div>
+
+  <!-- FUNDO ANIMADO -->
+  <canvas id="matrix"></canvas>
+  <div class="scanlines"></div>
+
+  <!-- ==============================================================
+       NAVEGAÇÃO
+       ============================================================== -->
+  <div class="container nav-wrap">
+    <nav class="nav card">
+      <a href="#inicio" class="logo">&gt;_ <b>CRYS</b><span class="cursor-blink">_</span></a>
+
+      <ul class="nav-links">
+        <li><a href="#projetos">Projetos</a></li>
+        <li><a href="#github">GitHub</a></li>
+        <li><a href="#sobre">Sobre</a></li>
+        <li><a href="#jornada">Jornada</a></li>
+        <li><a href="#contato">Contato</a></li>
+      </ul>
+
+      <button class="burger" id="burger" aria-label="Abrir menu">☰</button>
+    </nav>
+  </div>
+
+  <!-- Menu em tela cheia (celular) -->
+  <div class="menu-overlay" id="menu">
+    <button class="burger menu-close" id="menu-close" aria-label="Fechar menu" style="display:block">✕</button>
+    <a href="#projetos">Projetos</a>
+    <a href="#github">GitHub</a>
+    <a href="#sobre">Sobre</a>
+    <a href="#jornada">Jornada</a>
+    <a href="#contato">Contato</a>
+  </div>
+
+  <main>
+    <!-- ============================================================
+         HERO
+         ============================================================ -->
+    <section id="inicio" class="container">
+      <div class="hero card">
+        <!-- AVATAR: a foto vem de DADOS.foto (img/PFP.png).
+             Se a imagem não carregar, o JS mostra as iniciais no lugar. -->
+        <div class="avatar" id="avatar"></div>
+
+        <span class="tag"><span class="dot"></span><span id="status"></span></span>
+
+        <!-- data-text precisa ter o MESMO texto do título (usado no glitch).
+             O JS preenche os dois automaticamente a partir de DADOS.nomeCurto -->
+        <h1 class="glitch" id="hero-name" data-text=""></h1>
+
+        <!-- Frases que se digitam sozinhas (lista em DADOS.frases) -->
+        <p class="typing"><span id="typing"></span><span class="caret">█</span></p>
+
+        <div class="hero-actions">
+          <a href="#projetos" class="btn btn-yellow">▶ Ver projetos</a>
+          <a href="#contato" class="btn btn-dark">$ contato</a>
+        </div>
+      </div>
+
+      <!-- Linha de estatísticas + terminal interativo -->
+      <div class="stats">
+        <div class="stat card hover">
+          <div class="stat-icon">&lt;/&gt;</div>
+          <div>
+            <!-- data-count = número final do contador animado -->
+            <div class="stat-num" id="stat-projetos" data-count="0">0</div>
+            <div class="stat-label">Projetos</div>
+          </div>
+        </div>
+
+        <!-- Terminal: o visitante digita "help" e aperta Enter -->
+        <form class="term-input card" id="term-form" autocomplete="off">
+          <label for="term"><span class="long">crys@portfolio:~</span>$</label>
+          <input id="term" type="text" placeholder="digite help e aperte Enter" />
+          <button class="btn btn-yellow" type="submit" style="padding:.55rem .9rem" aria-label="Executar">⏎</button>
+        </form>
+
+        <div class="stat card hover">
+          <div class="stat-icon">⚙</div>
+          <div>
+            <div class="stat-num" id="stat-skills" data-count="0">0</div>
+            <div class="stat-label">Tecnologias</div>
+          </div>
+        </div>
+
+        <!-- Saída dos comandos do terminal -->
+        <div class="term-output card" id="term-output"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PROJETOS (gerados pelo JS a partir de DADOS.projetos)
+         ============================================================ -->
+    <section id="projetos" class="section container">
+      <h2 class="section-title reveal">Meus <span>projetos</span></h2>
+      <p class="section-sub reveal">ls ./projetos --all</p>
+
+      <div class="filters reveal" id="filters"></div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <!-- ============================================================
+         PROJETOS DO GITHUB (gerados pelo JS a partir de
+         DADOS.githubProjetos). Clicar no card abre o site (Vercel)
+         ou, se não tiver site, o repositório no GitHub.
+         ============================================================ -->
+    <section id="github" class="section container">
+      <h2 class="section-title reveal">Projetos do <span>GitHub</span></h2>
+      <p class="section-sub reveal">git clone github.com/CryzzBoy01</p>
+
+      <div class="grid" id="grid-github"></div>
+
+      <div class="center reveal">
+        <a class="btn btn-yellow" id="btn-github" href="#" target="_blank" rel="noopener">⌥ Ver todos no GitHub</a>
+      </div>
+    </section>
+
+    <!-- FAIXA DE TECNOLOGIAS (preenchida pelo JS com DADOS.skills) -->
+    <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee"></div></div>
+
+    <!-- ============================================================
+         SOBRE
+         ============================================================ -->
+    <section id="sobre" class="section container">
+      <h2 class="section-title reveal">Sobre <span>mim</span></h2>
+      <p class="section-sub reveal">whoami</p>
+
+      <div class="window card reveal">
+        <div class="window-bar"><i></i><i></i><i></i><span>bash — crys@portfolio</span></div>
+        <!-- Conteúdo gerado pelo JS (função montarSobre) -->
+        <div class="window-body" id="sobre-body"></div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         JORNADA (linha do tempo, gerada a partir de DADOS.jornada)
+         ============================================================ -->
+    <section id="jornada" class="section container">
+      <h2 class="section-title reveal">Minha <span>jornada</span></h2>
+      <p class="section-sub reveal">git log --oneline</p>
+      <div class="timeline" id="timeline"></div>
+    </section>
+
+    <!-- ============================================================
+         CONTATO
+         ============================================================ -->
+    <section id="contato" class="section container">
+      <h2 class="section-title reveal">Bora <span>conectar?</span></h2>
+      <p class="section-sub reveal">ping crys --redes</p>
+
+      <div class="contacts">
+        <!-- LinkedIn: troque o href se mudar a URL do perfil -->
+        <a class="contact card hover reveal" id="link-linkedin" href="#" target="_blank" rel="noopener">
+          <div class="contact-icon" style="background:#0a66c2">
+            <svg viewBox="0 0 24 24"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zm7.44 0h4.37v1.92h.06c.61-1.15 2.1-2.36 4.32-2.36 4.62 0 5.47 3.04 5.47 7v7.44h-4.56v-6.6c0-1.57-.03-3.6-2.2-3.6-2.2 0-2.53 1.72-2.53 3.49V22H7.66V8z"/></svg>
+          </div>
+          <div><h4>LinkedIn</h4><small>Crystian Pereira de Almeida</small></div>
+          <span class="arrow">→</span>
+        </a>
+
+        <!-- Instagram -->
+        <a class="contact card hover reveal" id="link-instagram" href="#" target="_blank" rel="noopener">
+          <div class="contact-icon" style="background:linear-gradient(45deg,#f58529,#dd2a7b,#8134af)">
+            <svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23a3.72 3.72 0 0 1-2.28 2.28c-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 0 1-2.28-2.28c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zM12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63a5.88 5.88 0 0 0-2.13 1.38A5.88 5.88 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.31.79.72 1.46 1.38 2.13a5.88 5.88 0 0 0 2.13 1.38c.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a6.13 6.13 0 0 0 3.51-3.51c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.88 5.88 0 0 0-1.38-2.13A5.88 5.88 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.4-11.85a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/></svg>
+          </div>
+          <div><h4>Instagram</h4><small id="ig-handle">@</small></div>
+          <span class="arrow">→</span>
+        </a>
+
+        <!-- GitHub -->
+        <a class="contact card hover reveal" id="link-github" href="#" target="_blank" rel="noopener">
+          <div class="contact-icon" style="background:#24292f">
+            <svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.09-.73.09-.73 1.2.09 1.83 1.24 1.83 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.63-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3"/></svg>
+          </div>
+          <div><h4>GitHub</h4><small id="gh-handle">@</small></div>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="ano"></span> <b>Crystian Pereira de Almeida</b> — feito com café, código e muito <b>Ctrl+Z</b>.</p>
+    <p style="margin-top:.4rem">Mauá · SP · Brasil</p>
+    <!-- Links do rodapé (os endereços vêm de DADOS.links) -->
+    <p style="margin-top:.8rem">
+      <a id="foot-github" href="#" target="_blank" rel="noopener"><b>GitHub</b></a> ·
+      <a id="foot-linkedin" href="#" target="_blank" rel="noopener"><b>LinkedIn</b></a> ·
+      <a id="foot-instagram" href="#" target="_blank" rel="noopener"><b>Instagram</b></a>
+    </p>
+  </footer>
+
+  <a href="#inicio" class="btn btn-yellow to-top" id="to-top" aria-label="Voltar ao topo">↑</a>
+
+
+  <script>
+  /* ===================================================================
+     0. DADOS DO PORTFÓLIO  <<< EDITE AQUI >>>
+     Tudo que aparece na página vem daqui. Para adicionar um projeto,
+     copie um bloco { ... } dentro de "projetos" e altere os campos.
+     =================================================================== */
+  const DADOS = {
+    nomeCompleto: "Crystian Pereira de Almeida",
+    nomeCurto:    "Crystian Pereira",   // aparece grande no topo (glitch)
+    iniciais:     "CP",                 // aparece no avatar se a foto falhar
+    foto:         "img/PFP.png",        // foto de perfil (avatar do topo)
+    status:       "estudante de ADS · aberto a oportunidades",
+    cidade:       "Mauá - SP",
+    curso:        "Análise e Desenvolvimento de Sistemas",
+    faculdade:    "Anhanguera",
+    bio:          "function (TI) { Cursando ADS; }",  // bio do Instagram
+
+    // Frases que o hero "digita" em loop
+    frases: [
+      "Estudante de Análise e Desenvolvimento de Sistemas",
+      "Criando landing pages para comércios locais",
+      "Aprendendo algo novo a cada commit",
+      "function (TI) { Cursando ADS; }"
+    ],
+
+    // Links das redes sociais
+    links: {
+      linkedin:  "https://www.linkedin.com/in/crystian-pereira-de-almeida-4a78032b2/",
+      instagram: "https://www.instagram.com/cryzz.boy.00/",
+      instagramHandle: "@cryzz.boy.00",
+      github:    "https://github.com/CryzzBoy01",
+      githubHandle: "@CryzzBoy01"
+    },
+
+    // Tecnologias (aparecem na faixa rolante e no contador)
+    // >>> Ajuste conforme o que você realmente usa <<<
+    skills: ["HTML5", "CSS3", "JavaScript", "Lógica de Programação", "Sistemas Operacionais",
+             "Matemática Computacional", "Git", "Linux", "Responsividade", "UI Design"],
+
+    // Categorias dos filtros. A chave (ex.: "web") é usada no campo
+    // "categoria" de cada projeto; o valor é o texto da pílula.
+    categorias: { todos: "Todos", web: "Web", faculdade: "Faculdade", estudos: "Estudos" },
+
+    // PROJETOS
+    //  titulo     -> nome do projeto
+    //  descricao  -> resumo curto
+    //  categoria  -> uma das chaves de "categorias" acima
+    //  tags       -> tecnologias usadas
+    //  icone      -> texto/emoji grande na capa
+    //  cor        -> 2 cores do degradê da capa
+    //  link       -> URL do projeto (deixe "" se não tiver)
+    //  preview    -> (opcional) caminho de um print do site. Se existir,
+    //                aparece no lugar do ícone, como mini navegador.
+    projetos: [
+      {
+        titulo: "Landing Page — JoaninhaKids03",
+        descricao: "Página de apresentação para uma loja de roupas de bebê em Mauá - SP, pensada para atrair clientes que encontram a loja pelo Google Maps.",
+        categoria: "web", tags: ["HTML", "CSS", "JavaScript"],
+        icone: "🐞", cor: ["#00ff9c", "#22d3ee"], link: ""
+      },
+      {
+        titulo: "Landing Pages para comércios locais",
+        descricao: "Série de páginas para lojas e sacolões da região de Mauá, cada uma com identidade visual própria.",
+        categoria: "web", tags: ["HTML", "CSS", "Design"],
+        icone: "🏪", cor: ["#ffd400", "#ff7a00"], link: ""
+      },
+      {
+        titulo: "Portfólio Hacker",
+        descricao: "Este site! Visual neo-brutalista com chuva matrix, glitch, terminal interativo e animações ao rolar.",
+        categoria: "web", tags: ["HTML", "CSS", "JS", "Canvas"],
+        icone: ">_", cor: ["#22d3ee", "#7c3aed"], link: ""
+      },
+      {
+        titulo: "Aula Prática — Sistemas Operacionais",
+        descricao: "Relatório de aula prática do curso de ADS explorando conceitos de sistemas operacionais.",
+        categoria: "faculdade", tags: ["SO", "Linux", "Relatório"],
+        icone: "💻", cor: ["#ff3b5c", "#ff9a3c"], link: ""
+      },
+      {
+        titulo: "Lógica e Matemática Computacional",
+        descricao: "Atividades práticas de lógica proposicional e matemática aplicada à computação.",
+        categoria: "faculdade", tags: ["Lógica", "Matemática"],
+        icone: "∑", cor: ["#a3ff00", "#00ff9c"], link: ""
+      },
+      {
+        titulo: "Estudos de JavaScript",
+        descricao: "Exercícios e mini-projetos para praticar a linguagem, a manipulação do DOM e as animações.",
+        categoria: "estudos", tags: ["JavaScript", "DOM"],
+        icone: "{ }", cor: ["#ffd400", "#00ff9c"], link: ""
+      }
+    ],
+
+    // PROJETOS DO GITHUB (seção "Projetos do GitHub")
+    //  titulo     -> nome mostrado no card
+    //  repo       -> nome do repositório (vira github.com/CryzzBoy01/<repo>)
+    //  descricao  -> resumo curto
+    //  linguagem  -> linguagem principal (aparece com uma bolinha colorida)
+    //  site       -> URL do site publicado (Vercel etc). Se existir, o card
+    //                abre o SITE; se estiver "", o card abre o REPOSITÓRIO.
+    //  preview    -> print do site (img/previews/...). Deixe "" para usar o ícone.
+    //  icone      -> usado só quando não há preview
+    githubProjetos: [
+      {
+        titulo: "SnackMan — Snake Game", repo: "Snake-Gamer",
+        descricao: "Jogo da cobrinha em pixel art com placar e controles W, A, S, D.",
+        linguagem: "JavaScript",
+        site: "https://snake-gamer-main.vercel.app/",
+        preview: "img/previews/snake-gamer.jpg", icone: "🐍"
+      },
+      {
+        titulo: "Tartarugas Ninja — Landing Page", repo: "Tartarugas-ninjas",
+        descricao: "Landing page de fã do filme Caos Mutante, com menu, botões de ação e vídeo.",
+        linguagem: "HTML",
+        site: "https://turtleslp.vercel.app/",
+        preview: "img/previews/tartarugas-ninjas.jpg", icone: "🐢"
+      },
+      {
+        titulo: "Portal RH", repo: "RH_PageProject",
+        descricao: "Portal do colaborador para RH com dashboard, presença por setor e avisos. Feito usando meu trabalho como base.",
+        linguagem: "HTML", site: "",
+        preview: "img/previews/rh-page.jpg", icone: "👥"
+      },
+      {
+        titulo: "Landing Page CryzzBoy", repo: "Landing_page",
+        descricao: "Página de apresentação com fundo animado em pixel art. Feita só pra teste.",
+        linguagem: "CSS", site: "",
+        preview: "img/previews/landing-page.jpg", icone: "🌊"
+      },
+      {
+        titulo: "Login Page", repo: "LoginPage",
+        descricao: "Uma página de login simples, com visual limpo e campos estilizados.",
+        linguagem: "CSS", site: "",
+        preview: "img/previews/login-page.jpg", icone: "🔑"
+      },
+      {
+        titulo: "Login com MySQL", repo: "LoginMySQL",
+        descricao: "Página de login que usa MySQL e XAMPP.",
+        linguagem: "PHP / MySQL", site: "",
+        preview: "", icone: "🔐"
+      }
+    ],
+
+    // Cores das bolinhas de linguagem (iguais às do GitHub)
+    coresLinguagem: { "JavaScript": "#f1e05a", "HTML": "#e34c26", "CSS": "#663399", "PHP / MySQL": "#4F5D95" },
+
+    // LINHA DO TEMPO
+    jornada: [
+      { ano: "2025", titulo: "Início em ADS", texto: "Comecei Análise e Desenvolvimento de Sistemas na Anhanguera." },
+      { ano: "2026", titulo: "Primeiros projetos web", texto: "Landing pages para comércios de Mauá e relatórios de aulas práticas." },
+      { ano: "NEXT", titulo: "Próximo commit...", texto: "Primeira vaga na área de tecnologia. Aberto a estágios e freelas!" }
+    ]
+  };
+
+
+  /* ===================================================================
+     1. FUNÇÕES AUXILIARES
+     =================================================================== */
+  // Atalho para document.querySelector
+  const $ = (sel) => document.querySelector(sel);
+
+  // Verdadeiro se o usuário pediu "menos movimento" no sistema
+  const menosMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Espera X milissegundos (usado com await)
+  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+
+  /* ===================================================================
+     2. PREENCHER A PÁGINA COM OS DADOS
+     =================================================================== */
+  function preencherTextos() {
+    // Avatar: tenta carregar a foto; se der erro, mostra as iniciais
+    const foto = document.createElement("img");
+    foto.src = DADOS.foto;
+    foto.alt = "Foto de " + DADOS.nomeCompleto;
+    foto.onerror = () => ($("#avatar").textContent = DADOS.iniciais);
+    $("#avatar").appendChild(foto);
+    $("#status").textContent = DADOS.status;
+    $("#hero-name").textContent = DADOS.nomeCurto;
+    $("#hero-name").dataset.text = DADOS.nomeCurto;  // usado pelo glitch
+    $("#link-linkedin").href = DADOS.links.linkedin;
+    $("#link-instagram").href = DADOS.links.instagram;
+    $("#ig-handle").textContent = DADOS.links.instagramHandle;
+    $("#link-github").href = DADOS.links.github;
+    $("#gh-handle").textContent = DADOS.links.githubHandle;
+    $("#btn-github").href = DADOS.links.github;
+    $("#foot-github").href = DADOS.links.github;
+    $("#foot-linkedin").href = DADOS.links.linkedin;
+    $("#foot-instagram").href = DADOS.links.instagram;
+    $("#ano").textContent = new Date().getFullYear();
+
+    // Contadores (o número final vai no data-count)
+    $("#stat-projetos").dataset.count = DADOS.projetos.length + DADOS.githubProjetos.length;
+    $("#stat-skills").dataset.count = DADOS.skills.length;
+  }
+
+  // Monta os botões de filtro (pílulas)
+  function montarFiltros() {
+    const box = $("#filters");
+    Object.entries(DADOS.categorias).forEach(([chave, nome], i) => {
+      const b = document.createElement("button");
+      b.className = "pill" + (i === 0 ? " active" : "");
+      b.textContent = nome;
+      b.dataset.filtro = chave;
+      b.addEventListener("click", () => filtrar(chave, b));
+      box.appendChild(b);
+    });
+  }
+
+  // Mostra só os projetos da categoria clicada
+  function filtrar(chave, botao) {
+    document.querySelectorAll(".pill").forEach((p) => p.classList.remove("active"));
+    botao.classList.add("active");
+    document.querySelectorAll(".project").forEach((card) => {
+      const mostrar = chave === "todos" || card.dataset.cat === chave;
+      card.classList.toggle("hidden", !mostrar);
+      // Pequena animação de "reaparecer"
+      if (mostrar) { card.classList.remove("visible"); requestAnimationFrame(() => card.classList.add("visible")); }
+    });
+  }
+
+  /* Gera a "capa" de um card de projeto.
+     - Com preview: mini navegador (barra com bolinhas + URL) e o print.
+     - Sem preview: degradê colorido com o ícone grande no meio.
+     Usada pelos dois grids (Meus projetos e Projetos do GitHub). */
+  function capa({ preview, icone, cor, badge, url }) {
+    if (preview) {
+      // Mostra só o domínio na barrinha (ex.: snake-gamer-main.vercel.app)
+      const endereco = (url || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+      return `
+        <div class="project-cover has-preview">
+          <div class="browser-bar"><i></i><i></i><i></i><span>${endereco}</span></div>
+          <span class="badge">${badge}</span>
+          <img src="${preview}" alt="Preview do projeto" loading="lazy">
+        </div>`;
+    }
+    const [c1, c2] = cor || ["#00ff9c", "#22d3ee"];
+    return `
+      <div class="project-cover" style="background:linear-gradient(135deg, ${c1}, ${c2})">
+        <span class="badge">${badge}</span>
+        ${icone}
+      </div>`;
+  }
+
+  // Cria os cards de projeto
+  function montarProjetos() {
+    const grid = $("#grid");
+    DADOS.projetos.forEach((p) => {
+      // Se tiver link, o card vira um <a>; se não, um <article>
+      const card = document.createElement(p.link ? "a" : "article");
+      if (p.link) { card.href = p.link; card.target = "_blank"; card.rel = "noopener"; }
+      card.className = "project card hover reveal";
+      card.dataset.cat = p.categoria;
+      card.innerHTML = `
+        ${capa({ preview: p.preview, icone: p.icone, cor: p.cor, url: p.link,
+                 badge: DADOS.categorias[p.categoria] || p.categoria })}
+        <div class="project-body">
+          <h3>${p.titulo}</h3>
+          <p>${p.descricao}</p>
+          <div class="chips">${p.tags.map((t) => `<span class="chip">${t}</span>`).join("")}</div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  /* Cria os cards da seção "Projetos do GitHub".
+     O card inteiro é um link:
+       - tem "site"?  -> abre o site publicado (Vercel)
+       - não tem?     -> abre o repositório no GitHub */
+  function montarGithub() {
+    const grid = $("#grid-github");
+    DADOS.githubProjetos.forEach((p) => {
+      const repoUrl = `${DADOS.links.github}/${p.repo}`;
+      const destino = p.site || repoUrl;
+
+      const card = document.createElement("a");
+      card.href = destino;
+      card.target = "_blank";
+      card.rel = "noopener";
+      card.className = "project card hover reveal";
+      card.innerHTML = `
+        ${capa({ preview: p.preview, icone: p.icone, url: destino,
+                 cor: ["#22d3ee", "#00ff9c"],
+                 badge: p.site ? "● online" : "repo" })}
+        <div class="project-body">
+          <h3>${p.titulo}</h3>
+          <p>${p.descricao}</p>
+          <div class="project-foot">
+            <span class="lang" style="--lang:${DADOS.coresLinguagem[p.linguagem] || "var(--green)"}">${p.linguagem}</span>
+            <span class="go">${p.site ? "Ver site ↗" : "Ver código ↗"}</span>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  // Faixa rolante: o conteúdo é repetido 2x para o loop não ter "emenda"
+  function montarMarquee() {
+    const itens = DADOS.skills.map((s) => `<span>${s}</span>`).join("");
+    $("#marquee").innerHTML = itens + itens;
+  }
+
+  // Janela de terminal da seção "Sobre"
+  function montarSobre() {
+    const d = DADOS;
+    $("#sobre-body").innerHTML = `
+      <p><span class="prompt">crys@portfolio:~$</span> whoami</p>
+      <p><span class="key">nome</span>      = <span class="str">"${d.nomeCompleto}"</span></p>
+      <p><span class="key">curso</span>     = <span class="str">"${d.curso}"</span></p>
+      <p><span class="key">faculdade</span> = <span class="str">"${d.faculdade}"</span></p>
+      <p><span class="key">local</span>     = <span class="str">"${d.cidade}"</span></p>
+      <p><span class="key">bio</span>       = <span class="str">"${d.bio}"</span></p>
+      <br>
+      <p><span class="prompt">crys@portfolio:~$</span> cat sobre.txt</p>
+      <p>Sou estudante de ${d.curso} e gosto de transformar ideias em páginas
+         que funcionam de verdade. Hoje estou focado em desenvolvimento web,
+         criando landing pages para comércios da minha região, e em fortalecer
+         a base de lógica, matemática computacional e sistemas operacionais.</p>
+      <br>
+      <p><span class="prompt">crys@portfolio:~$</span> <span class="cursor-blink" style="color:var(--green)">█</span></p>`;
+  }
+
+  // Linha do tempo
+  function montarJornada() {
+    $("#timeline").innerHTML = DADOS.jornada.map((j) => `
+      <div class="tl-item card hover reveal">
+        <div class="tl-year">${j.ano}</div>
+        <h4>${j.titulo}</h4>
+        <p>${j.texto}</p>
+      </div>`).join("");
+  }
+
+
+  /* ===================================================================
+     3. TELA DE BOOT
+     Escreve linha por linha e depois esconde a tela.
+     Para mudar as mensagens, edite o array "linhas".
+     =================================================================== */
+  async function boot() {
+    const tela = $("#boot");
+    const pre  = $("#boot-text");
+    if (menosMovimento) { tela.classList.add("hide"); return; }
+
+    const linhas = [
+      '<span class="dim">CRYS-OS v2.0.26 — inicializando...</span>',
+      '[<span class="ok"> OK </span>] Carregando kernel do portfólio',
+      '[<span class="ok"> OK </span>] Montando /home/crystian',
+      '[<span class="ok"> OK </span>] Compilando projetos',
+      '[<span class="ok"> OK </span>] Conectando ao LinkedIn e Instagram',
+      '[<span class="ok"> OK </span>] Injetando café ☕',
+      '',
+      'ACESSO PERMITIDO_'
+    ];
+    for (const l of linhas) {
+      pre.innerHTML += l + "\n";
+      await esperar(170);   // velocidade de cada linha
+    }
+    await esperar(350);
+    tela.classList.add("hide");
+  }
+
+
+  /* ===================================================================
+     4. CHUVA MATRIX (canvas no fundo)
+     - "caracteres": quais símbolos caem
+     - "tamanho": tamanho da fonte / largura de cada coluna
+     - opacidade geral está no CSS (#matrix)
+     =================================================================== */
+  function matrix() {
+    if (menosMovimento) return;
+    const canvas = $("#matrix");
+    const ctx = canvas.getContext("2d");
+    const caracteres = "01アイウエオカキクケコサシスセソ<>/{}[]=+*$#CRYS";
+    const tamanho = 16;
+    let colunas, gotas;
+
+    // Recalcula as colunas quando a janela muda de tamanho
+    function ajustar() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      colunas = Math.floor(canvas.width / tamanho);
+      gotas = Array(colunas).fill(0).map(() => Math.random() * -50);
+    }
+    ajustar();
+    window.addEventListener("resize", ajustar);
+
+    function desenhar() {
+      // Fundo semitransparente = deixa um "rastro" nas letras
+      ctx.fillStyle = "rgba(6, 10, 15, 0.12)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#00ff9c";
+      ctx.font = tamanho + "px JetBrains Mono, monospace";
+
+      gotas.forEach((y, i) => {
+        const letra = caracteres[Math.floor(Math.random() * caracteres.length)];
+        ctx.fillText(letra, i * tamanho, y * tamanho);
+        // Quando chega no fim, volta ao topo (aleatoriamente)
+        gotas[i] = (y * tamanho > canvas.height && Math.random() > 0.975) ? 0 : y + 1;
+      });
+    }
+    setInterval(desenhar, 50);   // menor número = chuva mais rápida
+  }
+
+
+  /* ===================================================================
+     5. TEXTO DIGITANDO (hero)
+     Digita cada frase de DADOS.frases, apaga e passa para a próxima.
+     =================================================================== */
+  async function digitar() {
+    const alvo = $("#typing");
+    if (menosMovimento) { alvo.textContent = DADOS.frases[0]; return; }
+    let i = 0;
+    while (true) {
+      const frase = DADOS.frases[i % DADOS.frases.length];
+      for (let c = 1; c <= frase.length; c++) { alvo.textContent = frase.slice(0, c); await esperar(55); }
+      await esperar(1800);                       // tempo com a frase completa
+      for (let c = frase.length; c >= 0; c--) { alvo.textContent = frase.slice(0, c); await esperar(25); }
+      await esperar(300);
+      i++;
+    }
+  }
+
+
+  /* ===================================================================
+     6. EFEITO "DECODIFICAR" NOS TÍTULOS
+     Quando o mouse passa num título de seção, as letras embaralham
+     e se "decodificam" até o texto original.
+     =================================================================== */
+  function decodificar() {
+    const simbolos = "!<>-_\\/[]{}—=+*^?#01";
+    document.querySelectorAll(".section-title").forEach((titulo) => {
+      const original = titulo.innerHTML;     // guarda o HTML (com <span>)
+      const texto = titulo.textContent;
+      let rodando = false;
+      titulo.addEventListener("mouseenter", () => {
+        if (rodando || menosMovimento) return;
+        rodando = true;
+        let passo = 0;
+        const timer = setInterval(() => {
+          titulo.textContent = texto.split("").map((ch, idx) =>
+            idx < passo || ch === " " ? ch : simbolos[Math.floor(Math.random() * simbolos.length)]
+          ).join("");
+          passo += 1;
+          if (passo > texto.length) { clearInterval(timer); titulo.innerHTML = original; rodando = false; }
+        }, 35);
+      });
+    });
+  }
+
+
+  /* ===================================================================
+     7. SCROLL REVEAL + CONTADORES
+     Usa IntersectionObserver: quando o elemento aparece na tela,
+     ganha a classe .visible (a animação está no CSS).
+     =================================================================== */
+  function revelarAoRolar() {
+    const obs = new IntersectionObserver((entradas) => {
+      entradas.forEach((e) => {
+        if (e.isIntersecting) {
+          const el = e.target;
+          el.classList.add("visible");
+          obs.unobserve(el);
+          // Depois que a entrada termina, remove as classes de reveal
+          // para o hover dos cards voltar a ser rápido (sem atraso).
+          setTimeout(() => {
+            el.classList.remove("reveal", "visible");
+            el.style.transitionDelay = "";
+          }, 1000);
+        }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll(".reveal").forEach((el, i) => {
+      el.style.transitionDelay = (i % 3) * 90 + "ms";   // efeito "cascata"
+      obs.observe(el);
+    });
+  }
+
+  // Conta de 0 até o valor de data-count
+  function contadores() {
+    document.querySelectorAll("[data-count]").forEach((el) => {
+      const fim = +el.dataset.count;
+      const duracao = 1400;
+      const inicio = performance.now();
+      function passo(agora) {
+        const p = Math.min((agora - inicio) / duracao, 1);
+        el.textContent = Math.floor(fim * (1 - Math.pow(1 - p, 3)));   // easing suave
+        if (p < 1) requestAnimationFrame(passo);
+      }
+      requestAnimationFrame(passo);
+    });
+  }
+
+
+  /* ===================================================================
+     8. TERMINAL INTERATIVO
+     Para criar um comando novo, adicione uma linha em "comandos":
+       nome: () => "texto de resposta"
+     =================================================================== */
+  function terminal() {
+    const form = $("#term-form");
+    const input = $("#term");
+    const out = $("#term-output");
+
+    const comandos = {
+      help:     () => "Comandos disponíveis:\n  <span class='c'>sobre</span>     quem sou eu\n  <span class='c'>projetos</span>  lista meus projetos\n  <span class='c'>github</span>    repositórios e sites\n  <span class='c'>skills</span>    tecnologias\n  <span class='c'>contato</span>   minhas redes\n  <span class='c'>sudo</span>      tenta a sorte\n  <span class='c'>clear</span>     limpa a tela",
+      sobre:    () => `${DADOS.nomeCompleto}\n${DADOS.curso} @ ${DADOS.faculdade}\n${DADOS.cidade}`,
+      projetos: () => DADOS.projetos.map((p, i) => `[${i + 1}] ${p.titulo}`).join("\n"),
+      skills:   () => DADOS.skills.join(" · "),
+      contato:  () => `LinkedIn:  ${DADOS.links.linkedin}\nInstagram: ${DADOS.links.instagramHandle}\nGitHub:    ${DADOS.links.github}`,
+      github:   () => DADOS.githubProjetos.map((p) => `${p.repo.padEnd(18)} ${p.site || "(só código)"}`).join("\n"),
+      sudo:     () => "<span class='c'>[sudo]</span> permissão negada. Boa tentativa, hacker 😎",
+      whoami:   () => DADOS.nomeCurto.toLowerCase().replace(" ", "_"),
+      clear:    () => null
+    };
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();                       // impede a página de recarregar
+      const cmd = input.value.trim().toLowerCase().split(" ")[0];
+      if (!cmd) return;
+      const fn = comandos[cmd];
+      const resposta = fn ? fn() : `comando não encontrado: ${cmd}\ndigite <span class='c'>help</span>`;
+
+      if (resposta === null) { out.classList.remove("show"); out.innerHTML = ""; }
+      else {
+        out.innerHTML = `<span class="c">crys@portfolio:~$</span> ${cmd}\n${resposta}`;
+        out.classList.remove("show"); void out.offsetWidth; out.classList.add("show");
+      }
+      input.value = "";
+    });
+  }
+
+
+  /* ===================================================================
+     9. MENU, BOTÃO "VOLTAR AO TOPO" e TILT 3D NOS CARDS
+     =================================================================== */
+  function menu() {
+    const m = $("#menu");
+    $("#burger").addEventListener("click", () => m.classList.add("open"));
+    $("#menu-close").addEventListener("click", () => m.classList.remove("open"));
+    // Fecha o menu ao clicar em um link
+    m.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => m.classList.remove("open")));
+  }
+
+  function voltarAoTopo() {
+    const btn = $("#to-top");
+    window.addEventListener("scroll", () => btn.classList.toggle("show", window.scrollY > 600));
+  }
+
+  // Inclina levemente os cards de projeto seguindo o mouse
+  function tilt() {
+    if (menosMovimento || window.matchMedia("(hover: none)").matches) return;
+    document.querySelectorAll(".project").forEach((card) => {
+      card.addEventListener("mousemove", (e) => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;   // -0.5 a 0.5
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform = `translate(-4px,-4px) perspective(700px) rotateX(${-y * 6}deg) rotateY(${x * 6}deg)`;
+      });
+      card.addEventListener("mouseleave", () => (card.style.transform = ""));
+    });
+  }
+
+
+  /* ===================================================================
+     INICIALIZAÇÃO — ordem em que tudo é executado.
+     Para desligar algum efeito, comente a linha (// na frente).
+     =================================================================== */
+  preencherTextos();
+  montarFiltros();
+  montarProjetos();
+  montarGithub();
+  montarMarquee();
+  montarSobre();
+  montarJornada();
+
+  boot().then(() => { contadores(); digitar(); });
+  matrix();
+  decodificar();
+  revelarAoRolar();
+  terminal();
+  menu();
+  voltarAoTopo();
+  tilt();
+  </script>
+</body>
+</html>
